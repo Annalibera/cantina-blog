@@ -1,0 +1,39 @@
+media:
+  input: images
+  output: images
+
+content:
+  - name: articoli
+    label: Articoli
+    type: collection
+    path: articoli
+    view:
+      fields: [title, category, date]
+    fields:
+      - name: title
+        label: Titolo
+        type: string
+        required: true
+      - name: category
+        label: Categoria
+        type: select
+        options:
+          values:
+            - MUSICA // SANREMO
+            - MARKETING // STRATEGIA
+            - MODA // TENDENZE
+        required: true
+      - name: date
+        label: Data
+        type: date
+        required: true
+      - name: excerpt
+        label: Sottotitolo / Riassunto breve
+        type: text
+      - name: image
+        label: Immagine di copertina
+        type: image
+      - name: body
+        label: Testo dell'articolo
+        type: rich-text
+        required: true
