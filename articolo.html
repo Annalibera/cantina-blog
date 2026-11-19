@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articolo — CANTINA</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .post-wrapper {
+            max-width: 780px;
+            margin: 60px auto;
+            padding: 0 24px;
+        }
+        .post-cover {
+            width: 100%;
+            max-height: 440px;
+            object-fit: cover;
+            margin: 24px 0;
+        }
+        .post-meta {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 24px;
+        }
+        .post-content p, .post-content h2, .post-content h3, .post-content ul, .post-content ol, .post-content blockquote {
+            margin-bottom: 1.15rem;
+            line-height: 1.75;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 28px;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="post-wrapper">
+        <a href="index.html" class="read-more back-link">← Torna alla Home</a>
+        <div id="post-category" class="category"></div>
+        <h1 id="post-title">Caricamento articolo...</h1>
+        <div id="post-meta" class="post-meta"></div>
+        <img id="post-image" class="post-cover" style="display:none;" alt="">
+        <div id="post-content" class="post-content"></div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <h3>VUOI LEGGERE TUTTO L'ARCHIVIO?</h3>
+                <div class="footer-buttons">
+                    <a href="marketing.html" class="btn-outline">Tutti i pezzi di Marketing</a>
+                    <a href="sanremo.html" class="btn-outline">Tutti i pezzi di Musica</a>
+                    <a href="moda.html" class="btn-outline">Tutti i pezzi di Moda</a>
+                </div>
+            </div>
+            <div class="footer-right">
+                <div class="author-name">Di Annalibera Di Martino</div>
+                <div class="author-bio">Redattrice freelance, strategist e cacciatrice di tendenze tra palchi e algoritmi.</div>
+                <div class="social-links">
+                    <a href="https://annaliberadimartino.netlify.app/" target="_blank">Portfolio</a> | 
+                    <a href="https://www.linkedin.com" target="_blank">LinkedIn</a> | 
+                    <a href="mailto:tua-email@email.it">Contattami</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (async function loadSinglePost() {
+            const params = new URLSearchParams(window.location.search);
+            const postFile = params.get("post");
+            const owner = "Annalibera";
+            const repo = "cantinaannalibera";
+            const branch = "main";
+            const folder = "articoli";
+
+            if (!postFile) {
+                document.getElementById("post-title").textContent = "Articolo non specificato.";
+                return;
+            }
+
+            function parseFrontmatter(mdText) {
+                const match = mdText.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
+                if (!match) return { meta: {}, content: mdText };
+                const meta = {};
+                match[1].split("\n").forEach(line => {
+                    const idx = line.indexOf(":");
+                    if (idx !== -1) {
+                        const key = line.slice(0, idx).trim();
+                        let val = line.slice(idx + 1).trim();
+                        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                            val = val.slice(1, -1);
+                        }
+                        meta[key] = val;
+                    }
+                });
+                return { meta, content: match[2] };
+            }
+
+            try {
+                const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${folder}/${encodeURIComponent(postFile)}`);
+                if (!res.ok) throw new Error("Not found");
+                const rawText = await res.text();
+                const { meta, content } = parseFrontmatter(rawText);
+
+                const title = meta.title || postFile.replace(/\.md$/, "");
+                document.title = `${title} — CANTINA`;
+                document.getElementById("post-title").textContent = title;
+                if (meta.category) document.getElementById("post-category").textContent = meta.category;
+                if (meta.date) document.getElementById("post-meta").textContent = `Pubblicato il ${meta.date}`;
+
+                if (meta.image) {
+                    const imgEl = document.getElementById("post-image");
+                    imgEl.src = meta.image;
+                    imgEl.alt = title;
+                    imgEl.style.display = "block";
+                }
+
+                document.getElementById("post-content").innerHTML = marked.parse(content);
+            } catch (e) {
+                document.getElementById("post-title").textContent = "Impossibile caricare l'articolo.";
+            }
+        })();
+    </script>
+
+</body>
+</html>
