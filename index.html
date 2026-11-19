@@ -13,12 +13,10 @@
 
     <!-- --- SLIDE 1 & 2 (ESPORTATE DA CANVA) --- -->
     <section class="canva-slide-section">
-        <!-- Inserisci qui il nome esatto della tua prima immagine nella cartella images/ -->
         <img src="images/slide-1.jpg" alt="CANTINA - Slide 1" class="slide-img">
     </section>
 
     <section class="canva-slide-section">
-        <!-- Inserisci qui il nome esatto della tua seconda immagine nella cartella images/ -->
         <img src="images/slide-2.jpg" alt="CANTINA - Slide 2" class="slide-img">
     </section>
 
@@ -28,7 +26,7 @@
             <h2>VUOI LEGGERE TUTTO L'ARCHIVIO?</h2>
         </div>
 
-        <div class="articles-grid">
+        <div class="articles-grid" id="dynamic-articles-grid">
             <!-- Card 1: Musica / Sanremo -->
             <article class="card">
                 <div class="card-img-placeholder">Musica // Sanremo</div>
@@ -80,6 +78,69 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        (async function loadCmsArticles() {
+            const owner = "Annalibera";
+            const repo = "cantinaannalibera";
+            const branch = "main";
+            const folder = "articoli";
+            const grid = document.getElementById("dynamic-articles-grid");
+
+            function parseFrontmatter(mdText) {
+                const match = mdText.match(/^---\s*\n([\s\S]*?)\n---/);
+                if (!match) return { meta: {} };
+                const meta = {};
+                match[1].split("\n").forEach(line => {
+                    const idx = line.indexOf(":");
+                    if (idx !== -1) {
+                        const key = line.slice(0, idx).trim();
+                        let val = line.slice(idx + 1).trim();
+                        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                            val = val.slice(1, -1);
+                        }
+                        meta[key] = val;
+                    }
+                });
+                return { meta };
+            }
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${folder}?ref=${branch}`);
+                if (!res.ok) return;
+                const files = await res.json();
+                if (!Array.isArray(files)) return;
+
+                const mdFiles = files.filter(f => f.type === "file" && f.name.endsWith(".md")).reverse();
+
+                for (const file of mdFiles) {
+                    const rawRes = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${folder}/${file.name}`);
+                    if (!rawRes.ok) continue;
+                    const rawText = await rawRes.text();
+                    const { meta } = parseFrontmatter(rawText);
+
+                    const articleEl = document.createElement("article");
+                    articleEl.className = "card";
+
+                    const mediaHtml = meta.image
+                        ? `<img src="${meta.image}" alt="${meta.title || 'Articolo'}" class="card-img" style="width:100%;height:200px;object-fit:cover;">`
+                        : `<div class="card-img-placeholder">${meta.category || "CANTINA"}</div>`;
+
+                    articleEl.innerHTML = `
+                        ${mediaHtml}
+                        <span class="category">${meta.category || "EDITORIALE"}</span>
+                        <h3>${meta.title || file.name.replace(/\.md$/, "")}</h3>
+                        <p>${meta.excerpt || ""}</p>
+                        <a href="articolo.html?post=${encodeURIComponent(file.name)}" class="read-more">Leggi l'articolo →</a>
+                    `;
+
+                    grid.appendChild(articleEl);
+                }
+            } catch (e) {
+                // In caso di repository privato non raggiungibile via API pubblica, lascia le card statiche intatte
+            }
+        })();
+    </script>
 
 </body>
 </html>
